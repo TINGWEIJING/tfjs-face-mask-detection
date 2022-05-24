@@ -70,8 +70,8 @@ function App() {
   const videoConstraints = {
     height: 720,
     width: 1280,
-    facingMode: "environment",
-    // deviceId: device.deviceId
+    // facingMode: "environment",
+    deviceId: selectedWebCamInfo.deviceId
   };
 
   const loadModels = async () => {

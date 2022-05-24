@@ -1,6 +1,6 @@
 {
   "homepage": "https://TINGWEIJING.github.io/tfjs-face-mask-detection",
-  "name": "tfjs-mobilenetv2-od",
+  "name": "tfjs-face-mask-detection",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
