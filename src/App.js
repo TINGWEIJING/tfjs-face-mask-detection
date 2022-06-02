@@ -25,6 +25,8 @@ const test_img_url = `${process.env.PUBLIC_URL}/test_imgs/mask_01.jpg`;
 function App() {
   const webcamRef = useRef(null);
   const multiFaceCanvasRef = useRef(Array(maxNumOfDisplayFace).fill(0));
+  const [faceDetectorProgress, setFaceDetectorProgress] = useState(0);
+  const [maskClassifierProgress, setMaskClassifierProgress] = useState(0);
   const [faceDetectionScores, setFaceDetectionScores] = useState([]);
   const [maskClassificationScores, setMaskClassificationScores] = useState([]);
   const [detectionModel, setDetectionModel] = useState(null);
@@ -71,7 +73,7 @@ function App() {
     height: 720,
     width: 1280,
     // facingMode: "environment",
-    deviceId: selectedWebCamInfo.deviceId
+    deviceId: selectedWebCamInfo.deviceId,
   };
 
   const loadModels = async () => {
@@ -86,6 +88,7 @@ function App() {
       face_detection_model_url,
       {
         onProgress: (fractions) => {
+          setFaceDetectorProgress(fractions);
           // console.log(fractions);
         },
       }
@@ -94,6 +97,7 @@ function App() {
       face_mask_classification_model_url,
       {
         onProgress: (fractions) => {
+          setMaskClassifierProgress(fractions);
           // console.log(fractions);
         },
       }
@@ -417,6 +421,57 @@ function App() {
     );
   };
 
+  const faceMaskPanel = () => {
+    if (detectionModel == null || classificationModel == null) {
+      const faceDetectionModelProgress = `Face Detection Model - ${
+        faceDetectorProgress * 100
+      }%`;
+      const maskClassifierModelProgress = `Mask Classifier Model - ${
+        maskClassifierProgress * 100
+      }%`;
+      return (
+        <div>
+          <div>{"Downloading models...."}</div>
+          <div>{faceDetectionModelProgress}</div>
+          <div>{maskClassifierModelProgress}</div>
+        </div>
+      );
+    } else if (multiFaceCanvasRef.current.length < 1) {
+      return <div>{"Warming up...."}</div>;
+    }
+    return multiFaceCanvasRef.current.map((item, i) => {
+      let labelName = "";
+      let faceScoreLabel = "";
+      let maskScoreLabel = "";
+      if (
+        faceDetectionScores[i] !== null &&
+        faceDetectionScores[i] !== undefined &&
+        maskClassificationScores[i] !== null &&
+        maskClassificationScores[i] !== undefined
+      ) {
+        labelName = maskClassificationScores[i] > 0 ? "No Mask" : "Mask";
+        faceScoreLabel = `Face: ${faceDetectionScores[i].toFixed(2)}`;
+        maskScoreLabel = `Mask: ${maskClassificationScores[i].toFixed(2)}`;
+      }
+      return (
+        <div key={i} style={styles.faceMaskContainer}>
+          <div>{labelName}</div>
+          <canvas
+            ref={(el) => (multiFaceCanvasRef.current[i] = el)}
+            height={faceRenderCanvasHeight}
+            width={faceRenderCanvasHeight}
+            style={{
+              height: faceRenderCanvasHeight,
+              width: faceRenderCanvasHeight,
+            }}
+          />
+          <div>{faceScoreLabel}</div>
+          <div>{maskScoreLabel}</div>
+        </div>
+      );
+    });
+  };
+
   return (
     <div className="App" style={styles.root}>
       <div
@@ -514,37 +569,7 @@ function App() {
           flexBasis: `${100 - verticalPanelSplitPercentage}%`,
         }}
       >
-        {multiFaceCanvasRef.current.map((item, i) => {
-          let labelName = "";
-          let faceScoreLabel = "";
-          let maskScoreLabel = "";
-          if (
-            faceDetectionScores[i] !== null &&
-            faceDetectionScores[i] !== undefined &&
-            maskClassificationScores[i] !== null &&
-            maskClassificationScores[i] !== undefined
-          ) {
-            labelName = maskClassificationScores[i] > 0 ? "No Mask" : "Mask";
-            faceScoreLabel = `Face: ${faceDetectionScores[i].toFixed(2)}`;
-            maskScoreLabel = `Mask: ${maskClassificationScores[i].toFixed(2)}`;
-          }
-          return (
-            <div key={i} style={styles.faceMaskContainer}>
-              <div>{labelName}</div>
-              <canvas
-                ref={(el) => (multiFaceCanvasRef.current[i] = el)}
-                height={faceRenderCanvasHeight}
-                width={faceRenderCanvasHeight}
-                style={{
-                  height: faceRenderCanvasHeight,
-                  width: faceRenderCanvasHeight,
-                }}
-              />
-              <div>{faceScoreLabel}</div>
-              <div>{maskScoreLabel}</div>
-            </div>
-          );
-        })}
+        {faceMaskPanel()}
       </div>
     </div>
   );
